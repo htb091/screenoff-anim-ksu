@@ -1,0 +1,5 @@
+﻿build/
+*.so
+*.apk
+external/Dobby/
+external/LSPlant/

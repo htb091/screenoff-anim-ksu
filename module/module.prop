@@ -1,0 +1,6 @@
+﻿id=screenoff_anim
+name=Flyme锁屏渐灭(KSU)
+version=v1.0
+versionCode=1
+author=Codex
+description=Zygisk模块: Hook PowerManagerService.goToSleep 延迟500ms + SystemUI截图渐灭动画
