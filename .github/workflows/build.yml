@@ -13,11 +13,14 @@ jobs:
       - name: Clone Dobby
         run: git clone --depth 1 https://github.com/jmpews/Dobby.git external/Dobby
 
-      - name: Patch Dobby arm64 visibility
+      - name: Fix Dobby arm64 asm (replace ADRP with LDR)
         run: |
-          # Make common_closure_bridge_handler externally visible
-          FILE=external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.cc
-          sed -i 's/^void common_closure_bridge_handler/extern "C" __attribute__((visibility("default"))) void common_closure_bridge_handler/' $FILE
+          FILE=external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
+          sed -i 's/adrp x17, common_closure_bridge_handler@PAGE/ldr x17, =common_closure_bridge_handler/' $FILE
+          sed -i '/add x17, x17, common_closure_bridge_handler@PAGEOFF/d' $FILE
+          FILE2=external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_trampoline_arm64.asm
+          sed -i 's/adrp x17, common_closure_bridge_handler@PAGE/ldr x17, =common_closure_bridge_handler/' $FILE2
+          sed -i '/add x17, x17, common_closure_bridge_handler@PAGEOFF/d' $FILE2
 
       - name: Setup Android NDK
         run: |
