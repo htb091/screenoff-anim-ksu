@@ -114,14 +114,17 @@ static bool isSystemServer() {
 class ScreenOffAnim : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override {
-        LOGI("onLoad called!");
-        
+        LOGI("onLoad called! pid=%d", getpid());
         if (isSystemServer()) {
             LOGI("Running in system_server");
             hookPms(env);
         } else {
             LOGI("Running in other process");
         }
+    }
+    
+    void preServerSpecialize(zygisk::ServerSpecializeArgs *args) override {
+        LOGI("preServerSpecialize called! pid=%d", getpid());
     }
 };
 
