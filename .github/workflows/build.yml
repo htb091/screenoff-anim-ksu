@@ -10,9 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone Dobby
-        run: git clone --depth 1 https://github.com/jmpews/Dobby.git external/Dobby
-
       - name: Setup Android NDK r27
         run: |
           wget -q https://dl.google.com/android/repository/android-ndk-r27c-linux.zip
