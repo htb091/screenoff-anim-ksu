@@ -96,24 +96,26 @@ static void hookPms(JNIEnv *env) {
     LOGI(gOrigEntry ? "goToSleep HOOKED" : "hook FAILED");
 }
 
+static bool isSystemServer() {
+    char cmdline[256] = {0};
+    FILE *f = fopen("/proc/self/cmdline", "r");
+    if (f) {
+        fread(cmdline, 1, sizeof(cmdline) - 1, f);
+        fclose(f);
+    }
+    return strcmp(cmdline, "system_server") == 0;
+}
+
 class ScreenOffAnim : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override {
         LOGI("onLoad called!");
         
-        // Check if we're in system_server
-        jclass processClass = env->FindClass("android/os/Process");
-        if (env->ExceptionCheck()) { env->ExceptionClear(); return; }
-        jmethodID myUidMethod = env->GetStaticMethodID(processClass, "myUid", "()I");
-        if (myUidMethod == nullptr) return;
-        jint uid = env->CallStaticIntMethod(processClass, myUidMethod);
-        
-        // UID 1000 = system (system_server)
-        if (uid == 1000) {
-            LOGI("Running in system_server (uid=1000)");
+        if (isSystemServer()) {
+            LOGI("Running in system_server");
             hookPms(env);
         } else {
-            LOGI("Running in app process (uid=%d)", uid);
+            LOGI("Running in other process");
         }
     }
 };
