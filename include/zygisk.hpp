@@ -92,5 +92,6 @@ void entry_impl(api_table *table, JNIEnv *env) {
 #define REGISTER_ZYGISK_MODULE(cls) \
     extern "C" [[gnu::visibility("default")]] \
     void zygisk_module_entry(zygisk::internal::api_table *table, JNIEnv *env) { \
+        __android_log_print(ANDROID_LOG_INFO, "ScreenOffAnim", "=== zygisk_module_entry called! pid=%d ===", getpid()); \
         zygisk::internal::entry_impl<cls>(table, env); \
     }
