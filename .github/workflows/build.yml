@@ -16,19 +16,29 @@ jobs:
           unzip -q android-ndk-r27c-linux.zip
           echo "NDK=$PWD/android-ndk-r27c" >> $GITHUB_ENV
 
-      - name: Build
+      - name: Build arm64
         run: |
-          cmake -B build \
+          cmake -B build64 \
             -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI=arm64-v8a \
             -DANDROID_PLATFORM=android-26 \
             -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target screenoff-anim -j$(nproc)
+          cmake --build build64 --target screenoff-anim -j$(nproc)
+
+      - name: Build arm32
+        run: |
+          cmake -B build32 \
+            -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=armeabi-v7a \
+            -DANDROID_PLATFORM=android-26 \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build32 --target screenoff-anim -j$(nproc)
 
       - name: Prepare module
         run: |
           mkdir -p module/zygisk
-          cp build/libscreenoff-anim.so module/zygisk/arm64-v8a.so
+          cp build64/libscreenoff-anim.so module/zygisk/arm64-v8a.so
+          cp build32/libscreenoff-anim.so module/zygisk/armeabi-v7a.so
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
