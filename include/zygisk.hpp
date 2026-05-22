@@ -24,8 +24,8 @@ struct AppSpecializeArgs {
     jboolean isTopApp;
     jobjectArray pkgDataInfoList;
     jobjectArray whitelistedDataInfoList;
-    booleanArray bindMountAppDataDirs;
-    booleanArray bindMountAppStorageDirs;
+    jbooleanArray bindMountAppDataDirs;
+    jbooleanArray bindMountAppStorageDirs;
 };
 
 struct ServerSpecializeArgs {
@@ -67,26 +67,23 @@ struct api_table {
 template <typename T>
 void entry_impl(api_table *table, JNIEnv *env) {
     static T module;
-    static api_table saved_table;
-    saved_table = *table;
+    ModuleBase *base = &module;
     
-    table->setOption = [](void *impl, int option) {
-        static_cast<T&>(module).setOption(option);
-    };
+    table->setOption = [](void *impl, int option) {};
     table->preAppSpecialize = [](void *impl, AppSpecializeArgs *args) {
-        static_cast<T&>(module).preAppSpecialize(args);
+        static_cast<ModuleBase*>(impl)->preAppSpecialize(args);
     };
     table->postAppSpecialize = [](void *impl, const AppSpecializeArgs *args) {
-        static_cast<T&>(module).postAppSpecialize(args);
+        static_cast<ModuleBase*>(impl)->postAppSpecialize(args);
     };
     table->preServerSpecialize = [](void *impl, ServerSpecializeArgs *args) {
-        static_cast<T&>(module).preServerSpecialize(args);
+        static_cast<ModuleBase*>(impl)->preServerSpecialize(args);
     };
     table->postServerSpecialize = [](void *impl, const ServerSpecializeArgs *args) {
-        static_cast<T&>(module).postServerSpecialize(args);
+        static_cast<ModuleBase*>(impl)->postServerSpecialize(args);
     };
     
-    static_cast<T&>(module).onLoad(nullptr, env);
+    module.onLoad(nullptr, env);
 }
 
 } // namespace internal
