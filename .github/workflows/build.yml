@@ -13,14 +13,18 @@ jobs:
       - name: Clone Dobby
         run: git clone --depth 1 https://github.com/jmpews/Dobby.git external/Dobby
 
-      - name: Fix Dobby arm64 asm (replace ADRP with LDR)
+      - name: Fix Dobby arm64 asm
         run: |
-          FILE=external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
-          sed -i 's/adrp x17, common_closure_bridge_handler@PAGE/ldr x17, =common_closure_bridge_handler/' $FILE
-          sed -i '/add x17, x17, common_closure_bridge_handler@PAGEOFF/d' $FILE
-          FILE2=external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_trampoline_arm64.asm
-          sed -i 's/adrp x17, common_closure_bridge_handler@PAGE/ldr x17, =common_closure_bridge_handler/' $FILE2
-          sed -i '/add x17, x17, common_closure_bridge_handler@PAGEOFF/d' $FILE2
+          for f in external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm \
+                   external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_trampoline_arm64.asm; do
+            echo "=== Before: lines with common_closure ==="
+            grep -n 'common_closure' $f || true
+            # Replace ADRP+ADD pair with LDR
+            sed -i '/adrp.*common_closure_bridge_handler@PAGE/,+1{ s/adrp.*/ldr x17, =common_closure_bridge_handler/; /add.*common_closure_bridge_handler@PAGEOFF/d; }' $f
+            sed -i '/adrp.*common_closure_bridge_handler@PAGE/,+1{ s/adrp.*/ldr x16, =common_closure_bridge_handler/; /add.*common_closure_bridge_handler@PAGEOFF/d; }' $f
+            echo "=== After ==="
+            grep -n 'common_closure' $f || true
+          done
 
       - name: Setup Android NDK
         run: |
