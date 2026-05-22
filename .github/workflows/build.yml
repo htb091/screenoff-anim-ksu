@@ -13,9 +13,13 @@ jobs:
       - name: Clone Dobby
         run: git clone --depth 1 https://github.com/jmpews/Dobby.git external/Dobby
 
+      - name: Patch Dobby arm64 asm
+        run: |
+          sed -i '1i.global common_closure_bridge_handler' external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_bridge_arm64.asm
+          sed -i '1i.global common_closure_bridge_handler' external/Dobby/source/TrampolineBridge/ClosureTrampolineBridge/arm64/closure_trampoline_arm64.asm
+
       - name: Setup Android NDK
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq unzip wget
           wget -q https://dl.google.com/android/repository/android-ndk-r28-linux.zip
           unzip -q android-ndk-r28-linux.zip
           echo "NDK=$PWD/android-ndk-r28" >> $GITHUB_ENV
