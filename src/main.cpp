@@ -98,10 +98,23 @@ static void hookPms(JNIEnv *env) {
 
 class ScreenOffAnim : public zygisk::ModuleBase {
 public:
-    void onAppProcess(JNIEnv *env, zygisk::AppProcessArgs *args) override {
-        if (strcmp(args->niceName, "system_server") != 0) return;
-        LOGI("system_server detected");
-        hookPms(env);
+    void onLoad(zygisk::Api *api, JNIEnv *env) override {
+        LOGI("onLoad called!");
+        
+        // Check if we're in system_server
+        jclass processClass = env->FindClass("android/os/Process");
+        if (env->ExceptionCheck()) { env->ExceptionClear(); return; }
+        jmethodID myUidMethod = env->GetStaticMethodID(processClass, "myUid", "()I");
+        if (myUidMethod == nullptr) return;
+        jint uid = env->CallStaticIntMethod(processClass, myUidMethod);
+        
+        // UID 1000 = system (system_server)
+        if (uid == 1000) {
+            LOGI("Running in system_server (uid=1000)");
+            hookPms(env);
+        } else {
+            LOGI("Running in app process (uid=%d)", uid);
+        }
     }
 };
 
