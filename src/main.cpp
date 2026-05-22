@@ -15,7 +15,9 @@
 
 static void *gOrigEntry = nullptr;
 
-static void *arm64_inline_hook(void *target, void *hook) {
+#if defined(__aarch64__)
+
+static void *do_inline_hook(void *target, void *hook) {
     uint32_t *src = (uint32_t *)target;
     uint32_t *tramp = (uint32_t *)malloc(20 * sizeof(uint32_t));
     memcpy(tramp, src, 16);
@@ -32,6 +34,29 @@ static void *arm64_inline_hook(void *target, void *hook) {
     __builtin___clear_cache((char *)target, (char *)target + 32);
     return tramp;
 }
+
+#elif defined(__arm__)
+
+static void *do_inline_hook(void *target, void *hook) {
+    uint32_t *src = (uint32_t *)target;
+    uint32_t *tramp = (uint32_t *)malloc(8 * sizeof(uint32_t));
+    memcpy(tramp, src, 8);
+    tramp[2] = 0xe51ff004; // LDR PC, [PC, #-4]
+    tramp[3] = (uint32_t)((uintptr_t)target + 8);
+    __builtin___clear_cache((char *)tramp, (char *)(tramp + 4));
+
+    uintptr_t page = (uintptr_t)target & ~0xFFF;
+    mprotect((void *)page, 0x1000, PROT_READ | PROT_WRITE | PROT_EXEC);
+    uint32_t *patch = (uint32_t *)target;
+    patch[0] = 0xe51ff004; // LDR PC, [PC, #-4]
+    patch[1] = (uint32_t)(uintptr_t)hook;
+    __builtin___clear_cache((char *)target, (char *)target + 8);
+    return tramp;
+}
+
+#else
+#error "Unsupported architecture"
+#endif
 
 static void goToSleepHook(JNIEnv *env, jobject thiz, jlong eventTime, jint reason, jint flags) {
     LOGI("goToSleep(reason=%d) -> delay 500ms", reason);
@@ -50,14 +75,24 @@ static void hookPms(JNIEnv *env) {
 
     void *artMethod = *(void **)method;
     uintptr_t entry = 0;
+#if defined(__aarch64__)
     for (int off : {0x20, 0x28, 0x30, 0x18, 0x38, 0x40}) {
+#else
+    for (int off : {0x10, 0x14, 0x18, 0x1c, 0x20, 0x24}) {
+#endif
         entry = *(uintptr_t *)((uint8_t *)artMethod + off);
-        if (entry > 0x1000 && entry < 0x7fffffffffffULL) break;
+        if (entry > 0x1000
+#if defined(__aarch64__)
+            && entry < 0x7fffffffffffULL
+#else
+            && entry < 0xffffffff
+#endif
+        ) break;
     }
     if (entry == 0 || entry < 0x1000) { LOGE("no entry point"); return; }
     LOGI("ArtMethod=%p entry=0x%lx", artMethod, (unsigned long)entry);
 
-    gOrigEntry = arm64_inline_hook((void *)entry, (void *)goToSleepHook);
+    gOrigEntry = do_inline_hook((void *)entry, (void *)goToSleepHook);
     LOGI(gOrigEntry ? "goToSleep HOOKED" : "hook FAILED");
 }
 
