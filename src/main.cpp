@@ -13,6 +13,11 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
 
+__attribute__((constructor))
+static void on_load() {
+    LOGI("=== .so LOADED (constructor) ===");
+}
+
 static void *gOrigEntry = nullptr;
 
 #if defined(__aarch64__)
